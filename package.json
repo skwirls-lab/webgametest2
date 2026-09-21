@@ -1,0 +1,13 @@
+{
+  "name": "neon-centipede",
+  "version": "1.0.0",
+  "description": "A modern synthwave take on the arcade classic Centipede. Vanilla JS, canvas, zero dependencies.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node tools/serve.mjs 8080",
+    "dev": "node tools/serve.mjs 8080"
+  },
+  "keywords": ["game", "canvas", "centipede", "arcade", "vanilla-js"],
+  "license": "MIT"
+}
