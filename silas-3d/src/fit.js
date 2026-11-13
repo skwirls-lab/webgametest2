@@ -87,7 +87,7 @@ function makeWarp(f, o) {
     out[0] = xs; out[1] = ys; out[2] = zs; out[3] = 1 / Math.max(1, kx, kz);
   };
   const tmp = [0, 0, 0, 1];
-  const apply = g => (x, y, z) => { warp(x, y, z, tmp); const s = tmp[3]; return g(tmp[0], tmp[1], tmp[2]) * s; };
+  const apply = g => (x, y, z) => { warp(x, y, z, tmp); const s = tmp[3]; return g(x < 0 ? -tmp[0] : tmp[0], tmp[1], tmp[2]) * s; };
   return { f: apply(f), apply, warp };
 }
 

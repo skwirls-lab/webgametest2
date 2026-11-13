@@ -12,14 +12,14 @@ void main(){ vec3 objectNormal=normal; vec3 transformed=position; vMk=mk; vP=pos
   vec4 mv=modelViewMatrix*vec4(transformed,1.); vN=normalize(normalMatrix*objectNormal);
   vV=projectionMatrix[3][3]==1.?vec3(0.,0.,1.):normalize(-mv.xyz); vZ=-mv.z; gl_Position=projectionMatrix*mv; }`;
 const COLOR_F = `precision highp float; varying vec3 vN; varying vec3 vV; varying vec2 vMk; varying vec3 vP; varying vec3 vNb;
-uniform vec3 uC0,uC1,uC2,uL,uRimA,uRimB,uRimColA,uRimColB,uShTint,uGlow,uViews,uInkCol; uniform float uCell,uLit,uRimK,uBlack,uGloss,uScale,uGrey,uPid,uInkOn;
+uniform vec3 uC0,uC1,uC2,uL,uRimA,uRimB,uRimColA,uRimColB,uShTint,uGlow,uViews,uInkCol,uKeyCol; uniform float uCell,uLit,uRimK,uBlack,uGloss,uScale,uGrey,uPid,uInkOn,uMkLine;
 uniform sampler2D tIF,tIS,tIB; uniform vec4 bF,bS,bB;
 float inkAt(sampler2D t,vec4 b,float u,float y){ vec4 s=texture2D(t,vec2((u-b.x)*b.z,(y-b.y)*b.w)); return s.a*step(abs(s.r*255./12.-uPid),.6); }
 float ht(vec2 p){ vec2 q=fract(mat2(.7071,-.7071,.7071,.7071)*p/(uCell*uScale))-.5; return length(q)*2.; }
 void main(){ vec3 N=normalize(vN); if(!gl_FrontFacing)N=-N; vec3 V=normalize(vV); vec3 L=normalize(uL);
   vec3 base=uC0; base=mix(base,uC1,step(0.,vMk.x)); base=mix(base,uC2,step(0.,vMk.y));
   base=mix(base,vec3(.74,.73,.71),uGrey);
-  float ndl=dot(N,L); vec3 sh=base*uShTint+vec3(.004,.006,.02);
+  float ndl=dot(N,L); vec3 sh=base*uShTint+vec3(.004,.006,.02); base*=uKeyCol;
   float d=ht(gl_FragCoord.xy); float k=clamp((.28-ndl)/.4,0.,1.);
   vec3 col=mix(base,sh,step(d,k*1.45)*uLit);
   col=mix(col,sh,step(ndl,-.12)*uLit);
@@ -32,14 +32,17 @@ void main(){ vec3 N=normalize(vN); if(!gl_FrontFacing)N=-N; vec3 V=normalize(vV)
   vec3 Nb=normalize(vNb); float wF=max(Nb.z,0.)*uViews.x, wS=abs(Nb.x)*uViews.y, wB=max(-Nb.z,0.)*uViews.z, ink=0.;
   if(wF>=wS&&wF>=wB){ if(wF>.45) ink=inkAt(tIF,bF,vP.x,vP.y); } else if(wS>=wB){ if(wS>.45) ink=inkAt(tIS,bS,vP.z,vP.y); } else if(wB>.45) ink=inkAt(tIB,bB,vP.x,vP.y);
   col=mix(col,uInkCol,step(.5,ink)*uInkOn);
+  if(uMkLine>.5) col=mix(col,uInkCol,1.-step(fwidth(vMk.x)*1.1*uScale,abs(vMk.x)));
   col+=uGlow;
   gl_FragColor=vec4(col,1.); }`;
 const G_F = `precision highp float; varying vec3 vN; varying float vZ; uniform float uId,uNear,uFar;
 void main(){ vec3 N=normalize(vN); if(!gl_FrontFacing)N=-N; gl_FragColor=vec4(N.xy*.5+.5,uId/40.,clamp((vZ-uNear)/(uFar-uNear),0.,1.)); }`;
 const QUAD_V = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.,1.); }`;
-const INK_F = `precision highp float; varying vec2 vUv; uniform sampler2D tC,tG; uniform vec2 uRes; uniform float uLine,uCrease,uCreaseT,uDepthT,uScale,uBoil; uniform vec3 uInk;
+const INK_F = `precision highp float; varying vec2 vUv; uniform sampler2D tC,tG; uniform vec2 uRes; uniform float uLine,uCrease,uCreaseT,uDepthT,uScale,uBoil,uMis,uTex,uGrain,uVig; uniform vec3 uInk;
+float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+float vn(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y); }
 vec3 nrm(vec4 g){ vec2 n=g.rg*2.-1.; return vec3(n,sqrt(max(0.,1.-dot(n,n)))); }
-void main(){ vec4 c=texture2D(tC,vUv); vec4 g0=texture2D(tG,vUv); float id0=floor(g0.b*40.+.5); vec3 n0=nrm(g0);
+vec3 comp(vec2 vUv){ vec4 c=texture2D(tC,vUv); vec4 g0=texture2D(tG,vUv); float id0=floor(g0.b*40.+.5); vec3 n0=nrm(g0);
   vec2 px=vUv*uRes/uScale;
   float wob=.78+.44*sin(px.y*.043+sin(px.x*.031+uBoil)*2.+uBoil*1.7)*sin(px.x*.027+1.3+uBoil);
   float e=0.;
@@ -50,23 +53,37 @@ void main(){ vec4 c=texture2D(tC,vUv); vec4 g0=texture2D(tG,vUv); float id0=floo
     if(abs(id-id0)>.5) e=1.; else if(id0>.5&&abs(g.a-g0.a)>uDepthT) e=1.; }
   if(id0>.5) for(int i=0;i<6;i++){ float a=float(i)*1.0472+.3; vec2 dir=vec2(cos(a),sin(a));
     vec4 g=texture2D(tG,vUv+dir*uCrease*wob*uScale/uRes); if(abs(floor(g.b*40.+.5)-id0)<.5&&dot(nrm(g),n0)<uCreaseT) e=1.; }
-  gl_FragColor=vec4(mix(c.rgb,uInk,e),1.); }`;
+  return mix(c.rgb,uInk,e); }
+void main(){ vec2 o=vec2(uMis,uMis*.35)*uScale/uRes; vec3 col=comp(vUv);
+  if(uMis>0.){ col.r=comp(vUv+o).r; col.b=comp(vUv-o*.7).b; }
+  vec2 p=vUv*uRes/uScale; float br=vn(vec2(p.x*.012+p.y*.02,p.y*.35-p.x*.2))*.6+vn(p*.05)*.4;          // dry-brush streaks
+  col*=1.+(br-.5)*uTex; col+=(h21(p+uBoil*7.)-.5)*uGrain;
+  col*=1.-uVig*smoothstep(.45,1.05,length(vUv-.5)*1.25);
+  gl_FragColor=vec4(col,1.); }`;
 const LOOK = {
   uL: { value: new THREE.Vector3(.45, .62, .64) }, uRimA: { value: new THREE.Vector3(.85, .45, -.3) }, uRimB: { value: new THREE.Vector3(-.9, .12, -.3) },
-  uRimColA: { value: new THREE.Color(.86, .9, 1) }, uRimColB: { value: new THREE.Color(.6, .27, 1) }, uShTint: { value: new THREE.Vector3(.56, .57, .68) },
+  uRimColA: { value: new THREE.Color(.86, .9, 1) }, uRimColB: { value: new THREE.Color(.6, .27, 1) }, uShTint: { value: new THREE.Vector3(.56, .57, .68) }, uKeyCol: { value: new THREE.Vector3(1, 1, 1) },
   tIF: { value: null }, tIS: { value: null }, tIB: { value: null }, bF: { value: new THREE.Vector4() }, bS: { value: new THREE.Vector4() }, bB: { value: new THREE.Vector4() }, uInkOn: { value: 1 }, uInkCol: { value: new THREE.Color(.045, .04, .06) },
   uCell: { value: 5 }, uLit: { value: 1 }, uRimK: { value: 0 }, uBlack: { value: 0 }, uScale: { value: 1 }, uGrey: { value: 0 }, uNear: { value: 3 }, uFar: { value: 6 }
 };
-const INKU = { tC: { value: null }, tG: { value: null }, uRes: { value: new THREE.Vector2(1, 1) }, uLine: { value: 2.1 }, uCrease: { value: 1.25 }, uCreaseT: { value: .45 }, uDepthT: { value: .012 }, uScale: LOOK.uScale, uBoil: { value: 0 }, uInk: { value: new THREE.Color(.045, .04, .06) } };
+const INKU = { tC: { value: null }, tG: { value: null }, uRes: { value: new THREE.Vector2(1, 1) }, uLine: { value: 2.1 }, uCrease: { value: 1.25 }, uCreaseT: { value: .45 }, uDepthT: { value: .012 }, uScale: LOOK.uScale, uBoil: { value: 0 }, uMis: { value: 0 }, uTex: { value: 0 }, uGrain: { value: 0 }, uVig: { value: 0 }, uInk: { value: new THREE.Color(.045, .04, .06) } };
 const PRESETS = {
-  sheet: { L: [.45, .62, .64], lit: 1, rim: 0, black: 0, sh: [.6, .6, .68], bg: 0xb4aea6 },
-  flat: { L: [.45, .62, .64], lit: 0, rim: 0, black: 0, sh: [1, 1, 1], bg: 0xb4aea6 },
-  grey: { L: [.45, .62, .64], lit: 1, rim: 0, black: 0, sh: [.62, .62, .66], bg: 0xb4aea6, grey: 1 }
+  sheet: { L: [.3, .75, .6], lit: 1, rim: 0, black: 0, sh: [.8, .77, .74], bg: 0xb4aea6 },
+  flat: { L: [.3, .75, .6], lit: 0, rim: 0, black: 0, sh: [1, 1, 1], bg: 0xb4aea6 },
+  grey: { L: [.45, .62, .64], lit: 1, rim: 0, black: 0, sh: [.62, .62, .66], bg: 0xb4aea6, grey: 1 },
+  /* cinematic presets: bold halftone, spotted blacks, coloured rims, printed-comic pass */
+  moon: { L: [.55, .7, .35], key: [.82, .88, 1.05], lit: 1, rim: 1, black: 1, sh: [.2, .25, .5], bg: 0x0a1228, rimA: [[.85, .45, -.3], 0xdbe6ff], rimB: [[-.9, .12, -.3], 0x35407a], print: 1 },
+  violet: { L: [-.75, .35, .5], key: [.85, .7, 1.1], lit: 1, rim: 1, black: 1, sh: [.2, .16, .42], bg: 0x0c0a22, rimA: [[.85, .5, -.3], 0xcfdcff], rimB: [[-.95, .1, .1], 0xa04dff], print: 1 },
+  azure: { L: [-.45, -.35, .8], key: [.7, .95, 1.2], lit: 1, rim: 1, black: 1, sh: [.14, .2, .5], bg: 0x06102c, rimA: [[.85, .5, -.3], 0x9a6bff], rimB: [[-.6, -.6, .5], 0x49c8ff], print: 1 }
 };
-function setPreset(name) { const p = PRESETS[name]; LOOK.uL.value.set(...p.L); LOOK.uLit.value = p.lit; LOOK.uRimK.value = p.rim; LOOK.uBlack.value = p.black; LOOK.uShTint.value.set(...p.sh); LOOK.uGrey.value = p.grey ? 1 : 0; if (p.rimA) { LOOK.uRimA.value.set(...p.rimA[0]); LOOK.uRimColA.value.set(p.rimA[1]); } if (p.rimB) { LOOK.uRimB.value.set(...p.rimB[0]); LOOK.uRimColB.value.set(p.rimB[1]); } return p; }
-function colorMat(c, gloss, views, pid) {
+function setPreset(name) {
+  const p = PRESETS[name]; LOOK.uL.value.set(...p.L); LOOK.uLit.value = p.lit; LOOK.uRimK.value = p.rim; LOOK.uBlack.value = p.black; LOOK.uShTint.value.set(...p.sh); LOOK.uGrey.value = p.grey ? 1 : 0; LOOK.uKeyCol.value.set(...(p.key || [1, 1, 1]));
+  if (p.rimA) { LOOK.uRimA.value.set(...p.rimA[0]); LOOK.uRimColA.value.set(p.rimA[1]); } if (p.rimB) { LOOK.uRimB.value.set(...p.rimB[0]); LOOK.uRimColB.value.set(p.rimB[1]); }
+  INKU.uMis.value = p.print ? 1.6 : 0; INKU.uTex.value = p.print ? .16 : 0; INKU.uGrain.value = p.print ? .035 : 0; INKU.uVig.value = p.print ? .55 : 0; LOOK.uCell.value = p.print ? 6 : 5; return p;
+}
+function colorMat(c, gloss, views, pid, mkLine) {
   const col = i => new THREE.Color(...(c[i] || c[0]));
-  return new THREE.ShaderMaterial({ vertexShader: SKIN_V, fragmentShader: COLOR_F, side: THREE.DoubleSide, uniforms: { ...LOOK, uC0: { value: col(0) }, uC1: { value: col(1) }, uC2: { value: col(2) }, uGloss: { value: gloss ? 1 : 0 }, uGlow: { value: new THREE.Vector3() }, uViews: { value: new THREE.Vector3(...(views || [0, 0, 0])) }, uPid: { value: pid || 0 } } });
+  return new THREE.ShaderMaterial({ vertexShader: SKIN_V, fragmentShader: COLOR_F, side: THREE.DoubleSide, uniforms: { ...LOOK, uC0: { value: col(0) }, uC1: { value: col(1) }, uC2: { value: col(2) }, uGloss: { value: gloss ? 1 : 0 }, uGlow: { value: new THREE.Vector3() }, uViews: { value: new THREE.Vector3(...(views || [0, 0, 0])) }, uPid: { value: pid || 0 }, uMkLine: { value: mkLine ? 1 : 0 } } });
 }
 const gMat = id => new THREE.ShaderMaterial({ vertexShader: SKIN_V, fragmentShader: G_F, side: THREE.DoubleSide, uniforms: { uId: { value: id }, uNear: LOOK.uNear, uFar: LOOK.uFar } });
 /* renders scene through the three passes into the renderer's current canvas (size w x h device pixels) */

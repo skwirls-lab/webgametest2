@@ -66,10 +66,12 @@ for name in ['front', 'side', 'back']:
     n, lb, st, _ = cv2.connectedComponentsWithStats(ink, 8); ink = np.isin(lb, [i for i in range(1, n) if st[i, 4] >= 14]).astype(np.uint8)
     cs, _ = cv2.findContours(ink, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_TC89_L1); polys = []
     for c in cs:
-        if cv2.contourArea(c) < 6: continue
+        x_, y_, w_, h_ = cv2.boundingRect(c); ar_ = cv2.contourArea(c)
+        if ar_ < 24 or max(w_, h_) < 16 or ar_ > .45 * w_ * h_ + 60: continue      # keep strokes; drop flecks and blots
         p = cv2.approxPolyDP(c, .6, True).reshape(-1, 2)
         if len(p) < 3: continue
         mx, my = int(p[:, 0].mean()), int(p[:, 1].mean()); pid = int(np.bincount(lab[np.clip(p[:, 1], 0, h - 1), np.clip(p[:, 0], 0, w - 1)]).argmax())
+        if PARTS[pid] in ('head', 'ears', 'belt', 'daggers', 'pendant', 'hands', 'feet', 'shins'): continue     # these are modelled, not drawn on
         polys.append([pid, [int(round(v)) for xy in p for v in ((xy[0] - cx) * sgn / S * 2000, (gy - xy[1]) / S * 2000)]])
     out['ink'][name] = polys; cv2.imwrite(B + name + '_ink.png', (1 - ink) * 255); print(name, 'ink shapes', len(polys))
 json.dump(pal, open(B + 'palette_samples.json', 'w'), indent=1)
