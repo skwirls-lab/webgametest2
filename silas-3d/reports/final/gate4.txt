@@ -1,0 +1,2 @@
+ink coverage of part boundaries, 12 turnaround cameras: min 100.0%  mean 100.0%
+frame time 900x900 (software GL in this container, not a real GPU): 729 ms

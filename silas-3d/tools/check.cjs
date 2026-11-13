@@ -10,7 +10,8 @@ const root = path.join(__dirname, '..'), tag = process.argv[2] || 'latest', out 
   const t0 = Date.now(); await p.goto('file://' + path.join(root, 'silas-turnaround.html') + '?harness=1'); await p.waitForFunction('window.READY===true', null, { timeout: 600000 });
   console.log('build time', ((Date.now() - t0) / 1000).toFixed(1) + 's');
   for (const v of ['front', 'side', 'back']) { const d = await p.evaluate(v => idShot(v), v); fs.writeFileSync(path.join(root, 'build', 'model_' + v + '_id.png'), Buffer.from(d.split(',')[1], 'base64')); }
-  if (process.argv[3] == 'shots') for (const [n, js] of Object.entries(JSON.parse(fs.readFileSync(path.join(__dirname, 'shots.json'), 'utf8')))) { const d = await p.evaluate(js); fs.writeFileSync(path.join(out, n + '.png'), Buffer.from(d.split(',')[1], 'base64')); }
+  if (process.argv[3] == 'final') { const cov = []; for (let i = 0; i < 12; i++) cov.push(await p.evaluate(a => inkCoverage(a), i * Math.PI / 6)); const ms = await p.evaluate('frameMs()'); const txt = 'ink coverage of part boundaries, 12 turnaround cameras: min ' + (Math.min(...cov) * 100).toFixed(1) + '%  mean ' + (cov.reduce((a, b) => a + b) / 12 * 100).toFixed(1) + '%\nframe time 900x900 (software GL in this container, not a real GPU): ' + ms.toFixed(0) + ' ms'; console.log(txt); fs.writeFileSync(path.join(out, 'gate4.txt'), txt + '\n'); }
+  if (process.argv[3] == 'shots' || process.argv[3] == 'final') for (const [n, js] of Object.entries(JSON.parse(fs.readFileSync(path.join(__dirname, 'shots.json'), 'utf8')))) { const d = await p.evaluate(js); fs.writeFileSync(path.join(out, n + '.png'), Buffer.from(d.split(',')[1], 'base64')); }
   await b.close();
   console.log(execSync('python3 tools/score.py ' + out, { cwd: root, env: { ...process.env, PYTHONPATH: 'tools' } }).toString());
 })();

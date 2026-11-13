@@ -72,6 +72,8 @@ for name in ['front', 'side', 'back']:
         if len(p) < 3: continue
         mx, my = int(p[:, 0].mean()), int(p[:, 1].mean()); pid = int(np.bincount(lab[np.clip(p[:, 1], 0, h - 1), np.clip(p[:, 0], 0, w - 1)]).argmax())
         if PARTS[pid] in ('head', 'ears', 'belt', 'daggers', 'pendant', 'hands', 'feet', 'shins'): continue     # these are modelled, not drawn on
+        my_ = float(np.mean((gy - p[:, 1]) / S))
+        if (PARTS[pid] == 'cape' and my_ > 1.44) or (PARTS[pid] == 'tunic' and my_ < .82): continue                 # collar and hem: shapes there are shadow, not strokes
         polys.append([pid, [int(round(v)) for xy in p for v in ((xy[0] - cx) * sgn / S * 2000, (gy - xy[1]) / S * 2000)]])
     out['ink'][name] = polys; cv2.imwrite(B + name + '_ink.png', (1 - ink) * 255); print(name, 'ink shapes', len(polys))
 json.dump(pal, open(B + 'palette_samples.json', 'w'), indent=1)

@@ -12,7 +12,7 @@ void main(){ vec3 objectNormal=normal; vec3 transformed=position; vMk=mk; vP=pos
   vec4 mv=modelViewMatrix*vec4(transformed,1.); vN=normalize(normalMatrix*objectNormal);
   vV=projectionMatrix[3][3]==1.?vec3(0.,0.,1.):normalize(-mv.xyz); vZ=-mv.z; gl_Position=projectionMatrix*mv; }`;
 const COLOR_F = `precision highp float; varying vec3 vN; varying vec3 vV; varying vec2 vMk; varying vec3 vP; varying vec3 vNb;
-uniform vec3 uC0,uC1,uC2,uL,uRimA,uRimB,uRimColA,uRimColB,uShTint,uGlow,uViews,uInkCol,uKeyCol; uniform float uCell,uLit,uRimK,uBlack,uGloss,uScale,uGrey,uPid,uInkOn,uMkLine;
+uniform vec3 uC0,uC1,uC2,uL,uRimA,uRimB,uRimColA,uRimColB,uShTint,uGlow,uViews,uInkCol,uKeyCol; uniform float uCell,uLit,uRimK,uBlack,uGloss,uScale,uGrey,uPid,uInkOn,uMkLine,uVein,uFur;
 uniform sampler2D tIF,tIS,tIB; uniform vec4 bF,bS,bB;
 float inkAt(sampler2D t,vec4 b,float u,float y){ vec4 s=texture2D(t,vec2((u-b.x)*b.z,(y-b.y)*b.w)); return s.a*step(abs(s.r*255./12.-uPid),.6); }
 float ht(vec2 p){ vec2 q=fract(mat2(.7071,-.7071,.7071,.7071)*p/(uCell*uScale))-.5; return length(q)*2.; }
@@ -33,6 +33,10 @@ void main(){ vec3 N=normalize(vN); if(!gl_FrontFacing)N=-N; vec3 V=normalize(vV)
   if(wF>=wS&&wF>=wB){ if(wF>.45) ink=inkAt(tIF,bF,vP.x,vP.y); } else if(wS>=wB){ if(wS>.45) ink=inkAt(tIS,bS,vP.z,vP.y); } else if(wB>.45) ink=inkAt(tIB,bB,vP.x,vP.y);
   col=mix(col,uInkCol,step(.5,ink)*uInkOn);
   if(uMkLine>.5) col=mix(col,uInkCol,1.-step(fwidth(vMk.x)*1.1*uScale,abs(vMk.x)));
+  if(uVein>0.&&uFur>.5){ // azure veins spreading out from the eyes
+    vec3 q=vP; float r1=abs(sin(q.x*38.+sin(q.y*27.)*2.4+sin(q.z*31.)*1.9)), r2=abs(sin(q.y*44.+sin(q.x*25.+q.z*29.)*2.6));
+    float gate=step(-.15,sin(q.x*9.+q.y*7.)*sin(q.z*8.+q.y*5.)), v=min(r1,r2+.02), reach=length(vec3(abs(vP.x)-.088,vP.y-1.775,vP.z-.088));
+    float inr=step(reach,uVein*1.9)*gate; col=mix(col,vec3(.78,.97,1.),inr*step(v,.1)); col+=vec3(.04,.3,.65)*inr*smoothstep(.45,.1,v)*.5; }
   col+=uGlow;
   gl_FragColor=vec4(col,1.); }`;
 const G_F = `precision highp float; varying vec3 vN; varying float vZ; uniform float uId,uNear,uFar;
@@ -64,6 +68,7 @@ const LOOK = {
   uL: { value: new THREE.Vector3(.45, .62, .64) }, uRimA: { value: new THREE.Vector3(.85, .45, -.3) }, uRimB: { value: new THREE.Vector3(-.9, .12, -.3) },
   uRimColA: { value: new THREE.Color(.86, .9, 1) }, uRimColB: { value: new THREE.Color(.6, .27, 1) }, uShTint: { value: new THREE.Vector3(.56, .57, .68) }, uKeyCol: { value: new THREE.Vector3(1, 1, 1) },
   tIF: { value: null }, tIS: { value: null }, tIB: { value: null }, bF: { value: new THREE.Vector4() }, bS: { value: new THREE.Vector4() }, bB: { value: new THREE.Vector4() }, uInkOn: { value: 1 }, uInkCol: { value: new THREE.Color(.045, .04, .06) },
+  uVein: { value: 0 },
   uCell: { value: 5 }, uLit: { value: 1 }, uRimK: { value: 0 }, uBlack: { value: 0 }, uScale: { value: 1 }, uGrey: { value: 0 }, uNear: { value: 3 }, uFar: { value: 6 }
 };
 const INKU = { tC: { value: null }, tG: { value: null }, uRes: { value: new THREE.Vector2(1, 1) }, uLine: { value: 2.1 }, uCrease: { value: 1.25 }, uCreaseT: { value: .45 }, uDepthT: { value: .012 }, uScale: LOOK.uScale, uBoil: { value: 0 }, uMis: { value: 0 }, uTex: { value: 0 }, uGrain: { value: 0 }, uVig: { value: 0 }, uInk: { value: new THREE.Color(.045, .04, .06) } };
@@ -72,7 +77,7 @@ const PRESETS = {
   flat: { L: [.3, .75, .6], lit: 0, rim: 0, black: 0, sh: [1, 1, 1], bg: 0xb4aea6 },
   grey: { L: [.45, .62, .64], lit: 1, rim: 0, black: 0, sh: [.62, .62, .66], bg: 0xb4aea6, grey: 1 },
   /* cinematic presets: bold halftone, spotted blacks, coloured rims, printed-comic pass */
-  moon: { L: [.55, .7, .35], key: [.82, .88, 1.05], lit: 1, rim: 1, black: 1, sh: [.2, .25, .5], bg: 0x0a1228, rimA: [[.85, .45, -.3], 0xdbe6ff], rimB: [[-.9, .12, -.3], 0x35407a], print: 1 },
+  moon: { L: [.5, .55, .68], key: [.86, .9, 1.04], lit: 1, rim: 1, black: 1, sh: [.3, .35, .62], bg: 0x0a1228, rimA: [[.85, .45, -.3], 0xdbe6ff], rimB: [[-.9, .12, -.3], 0x35407a], print: 1 },
   violet: { L: [-.75, .35, .5], key: [.85, .7, 1.1], lit: 1, rim: 1, black: 1, sh: [.2, .16, .42], bg: 0x0c0a22, rimA: [[.85, .5, -.3], 0xcfdcff], rimB: [[-.95, .1, .1], 0xa04dff], print: 1 },
   azure: { L: [-.45, -.35, .8], key: [.7, .95, 1.2], lit: 1, rim: 1, black: 1, sh: [.14, .2, .5], bg: 0x06102c, rimA: [[.85, .5, -.3], 0x9a6bff], rimB: [[-.6, -.6, .5], 0x49c8ff], print: 1 }
 };
@@ -83,7 +88,7 @@ function setPreset(name) {
 }
 function colorMat(c, gloss, views, pid, mkLine) {
   const col = i => new THREE.Color(...(c[i] || c[0]));
-  return new THREE.ShaderMaterial({ vertexShader: SKIN_V, fragmentShader: COLOR_F, side: THREE.DoubleSide, uniforms: { ...LOOK, uC0: { value: col(0) }, uC1: { value: col(1) }, uC2: { value: col(2) }, uGloss: { value: gloss ? 1 : 0 }, uGlow: { value: new THREE.Vector3() }, uViews: { value: new THREE.Vector3(...(views || [0, 0, 0])) }, uPid: { value: pid || 0 }, uMkLine: { value: mkLine ? 1 : 0 } } });
+  return new THREE.ShaderMaterial({ vertexShader: SKIN_V, fragmentShader: COLOR_F, side: THREE.DoubleSide, uniforms: { ...LOOK, uC0: { value: col(0) }, uC1: { value: col(1) }, uC2: { value: col(2) }, uGloss: { value: gloss ? 1 : 0 }, uGlow: { value: new THREE.Vector3() }, uViews: { value: new THREE.Vector3(...(views || [0, 0, 0])) }, uPid: { value: pid || 0 }, uMkLine: { value: mkLine ? 1 : 0 }, uFur: { value: 0 } } });
 }
 const gMat = id => new THREE.ShaderMaterial({ vertexShader: SKIN_V, fragmentShader: G_F, side: THREE.DoubleSide, uniforms: { uId: { value: id }, uNear: LOOK.uNear, uFar: LOOK.uFar } });
 /* renders scene through the three passes into the renderer's current canvas (size w x h device pixels) */

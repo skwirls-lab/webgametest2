@@ -1,7 +1,7 @@
 /* ===== Rig: skeleton, automatic skin weights, poses, secondary motion ===== */
 const BONE_DEFS = [
   ['hips', null, [0, .86, -.06]], ['spine', 'hips', [0, 1.03, -.06]], ['chest', 'spine', [0, 1.25, -.06]], ['neck', 'chest', [0, 1.5, -.04]], ['head', 'neck', [0, 1.64, -.02]],
-  ['earL', 'head', [.1, 1.86, -.06]], ['earR', 'head', [-.1, 1.86, -.06]],
+  ['earL', 'head', [.1, 1.86, -.06]], ['earR', 'head', [-.1, 1.86, -.06]], ['browL', 'head', [.085, 1.828, .1]], ['browR', 'head', [-.085, 1.828, .1]],
   ['armL', 'chest', [.2, 1.37, -.1]], ['foreL', 'armL', [.3, 1.15, -.12]], ['handL', 'foreL', [.325, .95, -.105]],
   ['armR', 'chest', [-.2, 1.37, -.1]], ['foreR', 'armR', [-.3, 1.15, -.12]], ['handR', 'foreR', [-.325, .95, -.105]],
   ['thighL', 'hips', [.1, .8, -.05]], ['shinL', 'thighL', [.145, .53, -.05]], ['footL', 'shinL', [.135, .31, -.13]],
@@ -25,10 +25,12 @@ const SKIN = {
   sleeves(x, y, z) { const a = ss(1.42, 1.32, y), e = ss(1.2, 1.12, y) * .5; return [['chest', 1 - a], ['arm' + sd(x), a - e], ['fore' + sd(x), e]]; },
   bracers(x, y, z) { const a = ss(1.1, 1.16, y) * .4; return [['fore' + sd(x), 1 - a], ['arm' + sd(x), a]]; },
   hands: (x) => [['hand' + sd(x), 1]],
+  drawn: (x) => [['hand' + sd(x), 1]],
   trousers(x, y, z) { const th = ss(.9, .76, y) * ss(.0, .05, Math.abs(x)), k = ss(.6, .46, y); return [['hips', 1 - th], ['thigh' + sd(x), th * (1 - k)], ['shin' + sd(x), th * k]]; },
   shins: (x) => [['foot' + sd(x), 1]], feet: (x) => [['foot' + sd(x), 1]],
   head: () => [['head', 1]],
   throat(x, y, z) { const n = ss(1.6, 1.46, y); return [['head', 1 - n], ['chest', n]]; }, clasp: () => [['chest', 1]],
+  hood: () => [['chest', 1]],
   jaw: () => [['head', 1]], eyes: () => [['head', 1]], nose: () => [['head', 1]], ears: (x) => [['ear' + sd(x), 1]]
 };
 function buildSkeleton() {
@@ -54,10 +56,30 @@ const POSES = {
     return { hipsY: -.06 + .05 * Math.abs(s), hips: [.38, 0, 0], spine: [.12, .1 * s, 0], chest: [.1, .12 * s, 0], neck: [-.25, 0, 0], head: [-.28, 0, 0], earL: [-.5, 0, 0], earR: [-.5, 0, 0],
       thighL: [L.th, 0, 0], shinL: [L.sh, 0, 0], footL: [L.ft, 0, 0], thighR: [Rr.th, 0, 0], shinR: [Rr.sh, 0, 0], footR: [Rr.ft, 0, 0],
       armL: [1.0 * s - .1, 0, .12], foreL: [-1.5, 0, 0], armR: [-1.0 * s - .1, 0, -.12], foreR: [-1.5, 0, 0],
+      browL: [0, 0, -.5], browR: [0, 0, .5],
       tail0: [-.75, 0, 0], tail1: [-.35, 0, 0], tail2: [-.3, 0, 0], tail3: [.25 + .12 * s, 0, 0], tail4: [.3, 0, 0], tail5: [.35 - .1 * s, 0, 0], tail6: [.2, 0, 0],
-      cloak1: [.95 + .08 * s, 0, 0], cloak2: [.25 + .1 * c, 0, 0], cloak3: [.15 - .12 * s, 0, 0] };
+      cloak1: [.8 + .1 * s, 0, .05 * c], cloak2: [.42 + .22 * c, 0, .1 * s], cloak3: [-.3 - .3 * s, 0, .14 * c] };
   }
 };
+Object.assign(POSES, {
+  crossed: { armL: [-.85, 0, -.12], foreL: [.05, 0, -1.95], handL: [0, 0, -.3], armR: [-.6, 0, .12], foreR: [-.35, 0, 1.95], handR: [0, 0, .3], head: [.05, .25, 0], spine: [-.04, 0, 0], thighL: [0, 0, .06], thighR: [0, 0, -.06], tail3: [.1, 0, 0] },
+  daggers: { drawn: 1, browL: [0, 0, -.45], browR: [0, 0, .45], hipsY: -.2, hips: [.22, .25, 0], spine: [.15, -.15, 0], chest: [.1, -.1, 0], neck: [-.15, 0, 0], head: [-.2, -.15, 0],
+    thighL: [-1.0, 0, .45], shinL: [1.05, 0, 0], footL: [-.25, 0, 0], thighR: [-.55, 0, -.5], shinR: [.95, 0, 0], footR: [-.4, 0, 0],
+    armL: [-.5, 0, .75], foreL: [-1.0, 0, -.5], armR: [-.75, 0, -.6], foreR: [-.9, 0, .6], tail0: [-.3, 0, 0], tail3: [.2, 0, 0], cloak1: [.25, 0, 0] },
+  leap: { hipsY: .35, hips: [.75, 0, 0], spine: [.1, 0, 0], neck: [-.3, 0, 0], head: [-.45, 0, 0], earL: [-.4, 0, 0], earR: [-.4, 0, 0],
+    thighL: [-1.5, 0, .1], shinL: [1.7, 0, 0], footL: [.3, 0, 0], thighR: [.2, 0, -.1], shinR: [.9, 0, 0], footR: [.6, 0, 0],
+    armL: [.6, 0, .9], foreL: [-.5, 0, 0], armR: [-1.4, 0, -.5], foreR: [-.5, 0, 0], tail0: [-.9, 0, 0], tail1: [-.3, 0, 0], tail3: [.3, 0, 0], tail5: [.3, 0, 0], cloak1: [.7, 0, 0], cloak2: [.3, 0, 0], cloak3: [.2, 0, 0] },
+  allFours: { hipsY: -.38, hipsZ: -.25, hips: [1.25, 0, 0], spine: [.08, 0, 0], chest: [.05, 0, 0], neck: [-.6, 0, 0], head: [-.65, 0, 0],
+    thighL: [-2.15, 0, .2], shinL: [1.75, 0, 0], footL: [-.75, 0, 0], thighR: [-1.75, 0, -.2], shinR: [1.45, 0, 0], footR: [-.85, 0, 0],
+    armL: [-1.55, 0, .12], foreL: [.2, 0, 0], handL: [-1.2, 0, 0], armR: [-1.15, 0, -.12], foreR: [-.15, 0, 0], handR: [-1.2, 0, 0],
+    tail0: [-.6, 0, 0], tail2: [.3, 0, 0], tail4: [.3, 0, 0], cloak1: [-.35, 0, 0], cloak2: [-.5, 0, 0], cloak3: [-.3, 0, 0] },
+  skid: { hipsY: -.14, hips: [-.3, 0, 0], spine: [.05, 0, 0], head: [.25, 0, 0], thighL: [-1.25, 0, .1], shinL: [.35, 0, 0], footL: [-.45, 0, 0], thighR: [-.35, 0, -.15], shinR: [1.35, 0, 0], footR: [-.5, 0, 0],
+    armL: [.3, 0, 1.0], foreL: [-.6, 0, 0], armR: [-.6, 0, -1.1], foreR: [-.7, 0, 0], cloak1: [-.5, 0, 0], cloak2: [-.5, 0, 0], cloak3: [-.3, 0, 0], tail0: [.5, 0, 0], tail2: [.3, 0, 0] },
+  brace: { browL: [0, 0, .35], browR: [0, 0, -.35], hipsY: -.12, hips: [.12, 0, 0], spine: [.1, 0, 0], head: [-.3, 0, 0], thighL: [-.75, 0, .3], shinL: [.9, 0, 0], footL: [-.3, 0, 0], thighR: [.1, 0, -.3], shinR: [.4, 0, 0], footR: [-.35, 0, 0],
+    armL: [-1.3, 0, .3], foreL: [-1.3, 0, -.3], armR: [-1.0, 0, -.3], foreR: [-1.5, 0, .3], cloak1: [.7, 0, 0], cloak2: [.3, 0, 0], tail0: [-.5, 0, 0], tail3: [.3, 0, 0], earL: [-.5, 0, 0], earR: [-.5, 0, 0] },
+  flame: { browL: [0, 0, -.55], browR: [0, 0, .55], hipsY: -.05, spine: [-.05, 0, 0], head: [.05, 0, 0], thighL: [-.25, 0, .22], shinL: [.4, 0, 0], footL: [-.15, 0, 0], thighR: [.1, 0, -.22], shinR: [.25, 0, 0], footR: [-.3, 0, 0],
+    armL: [-.75, 0, .45], foreL: [-1.5, 0, -.2], handL: [-.9, 0, 0], armR: [-.55, 0, -.5], foreR: [-1.55, 0, .2], handR: [-.9, 0, 0], cloak1: [.35, 0, 0], cloak2: [.2, 0, 0], tail0: [-.2, 0, 0] }
+});
 function applyPose(rig, pose) {
   for (const b of rig.list) b.rotation.set(0, 0, 0);
   rig.root.position.set(0, .86 + (pose.hipsY || 0), -.06 + (pose.hipsZ || 0));

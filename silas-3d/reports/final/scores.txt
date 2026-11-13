@@ -1,0 +1,9 @@
+front whole IoU 0.951
+      part IoU: daggers 0.40  belt 0.47  feet 0.56  shins 0.63  pendant 0.63  cape 0.69  hands 0.75  sleeves 0.77  ears 0.79  tunic 0.81  head 0.82  TORSO 0.84  trousers 0.89  bracers 0.91
+      landmark error (% of height): max 18.92, over 1.5%: daggers.w25 18.9, belt.w75 8.7, tunic.w50 8.0, feet.w25 6.4, head.w50 4.6, belt.w50 4.1, head.bottom 3.9, sleeves.w25 3.4, tunic.top 3.0, sleeves.w75 2.5, belt.w25 2.3, shins.bottom 2.3, shins.right 2.3, head.w75 2.0, tunic.bottom 1.8, feet.w50 1.8, tunic.w75 1.6, daggers.top 1.6, trousers.w75 1.6, shins.w75 1.6
+side  whole IoU 0.891
+      part IoU: daggers 0.17  belt 0.29  ears 0.40  shins 0.51  cape 0.65  tunic 0.67  trousers 0.71  TORSO 0.72  head 0.85  tail 0.95
+      landmark error (% of height): max 10.26, over 1.5%: head.w75 10.3, cape.w25 8.9, belt.w50 5.2, daggers.top 5.2, daggers.left 5.2, trousers.w75 5.2, shins.w75 4.8, ears.w50 4.1, belt.bottom 4.1, cape.w75 3.9, ears.right 3.6, ears.w25 3.6, tunic.w50 3.4, belt.w75 3.4, trousers.w25 3.4, trousers.w50 3.2, tunic.left 3.0, ears.w75 2.7, daggers.w75 2.7, head.top 2.5, head.w25 2.5, tunic.top 2.5, head.bottom 2.3, cape.left 2.3, shins.w50 2.0, shins.left 1.8, trousers.bottom 1.6
+back  whole IoU 0.855
+      part IoU: sleeves 0.21  ears 0.49  trousers 0.57  feet 0.57  shins 0.57  hands 0.61  bracers 0.64  head 0.81  cape 0.81
+      landmark error (% of height): max 29.64, over 1.5%: sleeves.w25 29.6, cape.top 4.3, trousers.top 4.3, cape.bottom 3.4, ears.bottom 2.5, trousers.w75 2.3, feet.w25 2.0, feet.w50 2.0, cape.w50 1.8, hands.bottom 1.8, feet.w75 1.8, head.bottom 1.6, shins.bottom 1.6
