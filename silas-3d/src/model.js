@@ -1,117 +1,164 @@
 /* ===== SILAS — sculpted in bind pose. Units: feet at y=0, ear tips ~2.0, facing +z.
-   Every landmark below was measured off the reference model sheet (front and side views). ===== */
+   Each part is a rough sculpt (blended volumes) that fit.js stretches onto the reference outlines. ===== */
 const COL = {
-  fur: hex('#8d8a8e'), furD: hex('#6a676d'), furL: hex('#b3b1b6'), white: hex('#ebe8e4'), cloak: hex('#a66a31'), cloakD: hex('#7a4821'), green: hex('#5b7d4e'),
-  cream: hex('#cbbd95'), leather: hex('#623f27'), leatherD: hex('#43291a'), belt: hex('#54341f'), trou: hex('#48423a'), steel: hex('#cfd8ea'), ear: hex('#a98088'),
-  pend: hex('#8a5a2e'), ink: hex('#0b0a12'), claw: hex('#2a2732'), dirt: hex('#6f6a45')
+  fur: hex('#7f7772'), furD: hex('#5f5752'), furL: hex('#c4bbb3'), white: hex('#d9d2ca'), cloak: hex('#86674a'), cloakD: hex('#5a4533'), green: hex('#565c47'),
+  cream: hex('#978d77'), leather: hex('#40342c'), leatherL: hex('#665749'), belt: hex('#463b32'), trou: hex('#3b352e'), steel: hex('#9a9894'), ear: hex('#8f7f78'),
+  pend: hex('#6a574a'), ink: hex('#0b0a12'), claw: hex('#1d1a17'), ring: hex('#d3cbc1'), eye: hex('#17110e'), iris: hex('#4a392b'), nose: hex('#6b524c')
 };
-function earD(px, y, z) {
-  const ex = px - .095, ey = y - 1.845, ez = (z + .06) * 2.1;
-  let d = S.cone(ex, ey, ez, 0, 0, 0, .024, .145, 0, .052, .009);
-  const inner = S.cone(ex, ey, ez - .07, .002, .012, 0, .022, .13, 0, .038, .003);
-  d = S.smax(d, -inner, .01) / 1.5;
-  d = S.smin(d, S.cone(px, y, z, .12, 1.985, -.06, .127, 2.04, -.066, .011, .0015), .008);
-  return [S.smin(d, S.cone(px, y, z, .114, 1.98, -.064, .108, 2.03, -.074, .009, .0015), .008), inner];
-}
-function headF(x, y, z) {
-  const px = Math.abs(x);
-  let d = S.ell(px, y, z, 0, 1.765, -.01, .135, .125, .135);
-  d = S.smin(d, S.ell(px, y, z, .072, 1.715, .03, .086, .072, .09), .05);                    // cheeks
-  d = S.smin(d, S.cone(px, y, z, 0, 1.737, .07, 0, 1.704, .186, .088, .04), .06);            // muzzle
-  d = S.smin(d, S.ell(px, y, z, 0, 1.662, .07, .064, .04, .085), .04);                        // jaw
-  d = S.smin(d, S.ell(px, y, z, .06, 1.8, .065, .05, .026, .045), .03);                       // brow
-  d = S.smin(d, S.cone(px, y, z, .11, 1.71, -.01, .168, 1.672, -.04, .036, .003), .02);       // cheek ruff
-  d = S.smin(d, S.cone(px, y, z, .098, 1.672, 0, .142, 1.615, -.02, .032, .003), .02);
-  d = S.smin(d, S.cone(px, y, z, 0, 1.66, -.04, 0, 1.44, -.05, .088, .1), .04);               // neck
-  d = S.smin(d, S.cone(px, y, z, 0, 1.61, .03, 0, 1.45, .055, .062, .03), .04);               // chest fluff
-  return S.smin(d, earD(px, y, z)[0], .016);
-}
-const headC = (x, y, z) => (y > 1.85 && earD(Math.abs(x), y, z)[1] < .012) ? COL.ear : (y < 1.7 && z > -.02 ? COL.white : COL.fur);
-function tailPath() {
-  const C = [[-.2, .9], [-.36, .9], [-.47, .95], [-.47, 1.12], [-.44, 1.34], [-.47, 1.5], [-.57, 1.57], [-.66, 1.51], [-.7, 1.42]], out = [], n = 34, m = C.length - 1;
-  for (let k = 0; k <= n; k++) {
-    const u = k / n * m, i = Math.min(m - 1, Math.floor(u)), f = u - i, p0 = C[Math.max(0, i - 1)], p1 = C[i], p2 = C[i + 1], p3 = C[Math.min(m, i + 2)];
-    const q = d => .5 * ((2 * p1[d]) + (-p0[d] + p2[d]) * f + (2 * p0[d] - 5 * p1[d] + 4 * p2[d] - p3[d]) * f * f + (-p0[d] + 3 * p1[d] - 3 * p2[d] + p3[d]) * f * f * f);
-    const t = k / n; out.push([q(0), q(1), .055 + .08 * S.ss(0, .2, t) - .11 * Math.pow(S.ss(.5, 1, t), 1.2)]);
-  }
-  return out;
-}
-const TAIL = tailPath();
-const tuft = (x, y, z) => Math.sin(x * 52 + Math.sin(y * 7) * 2) * Math.sin(y * 19 - z * 25 + Math.sin(x * 9));
-function tailF(x, y, z) {
-  let d = 9; for (const s of TAIL) d = S.smin(d, S.len(x * 1.25, y - s[1], z - s[0]) - s[2], .05);
-  return (d - .003 * tuft(x, y, z)) * .8;
-}
 const BZ = -.06;
-const cloakR = (y, th) => .178 - .06 * S.ss(1.36, 1.5, y) + (1.45 - y) * .05 + .012 * Math.sin(th * 7 + y * 2) * S.clamp((1.3 - y) * 1.4, 0, 1);
-function cloakF(x, y, z) {
+/* ---------- head (landmarks measured on the front and side face crops) ---------- */
+const EYE = { c: [.0875, 1.775, .0875], t: [.59, 0, -.81], n: [.81, 0, .59] };       // socket centre, long axis, outward normal
+function eyeLocal(px, y, z) {            // -> [along the eye, up (tilted: inner corner lower), outward]
+  const dx = px - EYE.c[0], dy = y - EYE.c[1], dz = z - EYE.c[2], u = dx * EYE.t[0] + dz * EYE.t[2], w = dx * EYE.n[0] + dz * EYE.n[2], c = Math.cos(.42), s = Math.sin(.42);
+  return [u * c - dy * s, u * s + dy * c, w];
+}
+const socket = (px, y, z) => { const e = eyeLocal(px, y, z); return S.ell(e[0], e[1], e[2], 0, 0, 0, .047, .0235, .03); };
+function headS(px, y, z) {
+  let d = S.ell(px, y, z, 0, 1.79, -.01, .128, .122, .134);                                   // cranium
+  d = S.smin(d, S.ell(px, y, z, .068, 1.715, .02, .096, .074, .098), .05);                    // cheeks
+  d = S.smin(d, S.cone(px, y, z, 0, 1.8, .06, 0, 1.722, .185, .07, .036), .05);               // bridge: straight slope from brow to nose
+  d = S.smin(d, S.cone(px, y, z, 0, 1.7, .09, 0, 1.69, .18, .068, .04), .04);                 // upper lip / whisker pads
+                       // whisker pads overhang the mouth
+  d = S.smin(d, S.ell(px, y, z, .068, 1.818, .078, .046, .022, .04), .03);                    // brow
+  d = S.smin(d, S.cone(px, y, z, .125, 1.735, -.01, .178, 1.74, -.035, .034, .006), .02);     // cheek ruff: three bold tufts
+  d = S.smin(d, S.cone(px, y, z, .125, 1.705, -.01, .174, 1.695, -.04, .034, .006), .02);
+  d = S.smin(d, S.cone(px, y, z, .115, 1.675, 0, .162, 1.655, -.035, .032, .006), .02);
+  d = S.smin(d, S.cone(px, y, z, 0, 1.885, -.015, 0, 1.925, -.04, .045, .008), .02);          // crown tuft
+  d = S.smin(d, S.cone(px, y, z, 0, 1.67, .0, 0, 1.45, .02, .105, .095), .04);                // throat
+  d = S.smin(d, S.cone(px, y, z, 0, 1.6, .04, 0, 1.45, .07, .065, .04), .04);                 // chest fluff
+  return S.smax(d, -socket(px, y, z), .008);
+}
+const headF = trim((x, y, z) => headS(Math.abs(x), y, z), { front: 'head', side: 'head', k: .008 });
+const neckF = (x, y, z) => S.cone(x, y, z, 0, 1.64, -.04, 0, 1.4, -.05, .07, .08);
+const eyeC = [EYE.c[0] - EYE.n[0] * .03, EYE.c[1], EYE.c[2] - EYE.n[2] * .03];
+const eyeF = (x, y, z) => S.sph(Math.abs(x), y, z, eyeC[0], eyeC[1], eyeC[2], .0365);
+const noseF = (x, y, z) => Math.min(S.ell(x, y, z, 0, 1.699, .212, .03, .019, .019), S.cone(x, y, z, 0, 1.686, .221, 0, 1.662, .212, .005, .0035));
+const jawF = trim((x, y, z) => S.smin(S.ell(x, y, z, 0, 1.643, .132, .04, .019, .062), S.ell(x, y, z, 0, 1.634, .1, .04, .018, .055), .02), { front: 'head', side: 'head', k: .004 });
+/* ---------- ears: cupped, opening forward and outward ---------- */
+function earS(px, y, z) {
+  const c = Math.cos(.6), s = Math.sin(.6), dx = px - .1, dz = z + .062, u = dx * c - dz * s, w = dx * s + dz * c, ey = y - 1.855;
+  let d = S.cone(u, ey, w * 2.4, 0, 0, 0, .012, .15, 0, .052, .012);
+  const inner = S.cone(u, ey, (w - .03) * 2.4, .002, .016, 0, .012, .135, 0, .036, .004);
+  d = S.smax(d, -inner, .01) / 1.6;
+  d = S.smin(d, S.cone(px, y, z, .119, 1.99, -.07, .123, 2.035, -.076, .013, .004), .006);
+  return [d, inner];
+}
+const earF = trim((x, y, z) => earS(Math.abs(x), y, z)[0], { front: 'ears', k: .005 });
+/* ---------- tail: the side-view outline, inflated into one bold clean shape ---------- */
+const tailD = RD.sdf('side', 'tail');
+function tailF(x, y, z) {
+  const d = tailD(z, y), R = .17, T = .135;
+  if (d > 0) return Math.hypot(d, Math.max(0, Math.abs(x) - .01)) * .8;
+  const q = 1 - Math.min(-d, R) / R; return Math.max(d, Math.abs(x) - T * Math.sqrt(1 - q * q) - .012) * .8;
+}
+const tailRoot = (x, y, z) => S.cone(x, y, z, 0, .86, -.14, 0, .88, -.34, .07, .09);
+/* ---------- cloak (back) and cape (shoulders + hood) ---------- */
+const cloakR = (y, th) => .178 - .05 * S.ss(1.36, 1.5, y) + (1.45 - y) * .05 + .01 * Math.sin(th * 7 + y * 2) * S.clamp((1.3 - y) * 1.4, 0, 1);
+function cloakS(x, y, z) {
   const qx = x * .7, qz = z - BZ, r = Math.hypot(qx, qz), th = Math.atan2(qx, -qz), R = cloakR(y, th);
-  const bot = .42 + .07 * Math.abs(Math.sin(th * 5.3 + .4)) + .04 * Math.sin(th * 2.1 + 1) + .03 * Math.abs(Math.sin(th * 13));
-  let d = Math.max(Math.abs(r - R) - .011, bot - y, y - 1.5, (Math.abs(th) - 1.3) * r);
-  d = Math.max(d, -S.sph(x, y, z, .15, .6, -.3, .03), -S.sph(x, y, z, -.2, .72, -.28, .024));
-  return d * .7;
+  const bot = .4 + .06 * Math.abs(Math.sin(th * 5.3 + .4)) + .035 * Math.sin(th * 2.1 + 1) + .025 * Math.abs(Math.sin(th * 13));
+  return Math.max(Math.abs(r - R) - .011, bot - y, y - 1.5, (Math.abs(th) - 1.35) * r) * .7;
 }
+const cloakW = makeWarp(cloakS, { b: [0, .36, -.4, .42, 1.5, .1], front: { view: 'back', parts: ['cloak', 'cape'], mode: 'outer', ymax: 1.3 }, side: { parts: ['cloak', 'cape'], mode: 'back', pivot: BZ, ymax: 1.25 }, smooth: 4 });
 const CAPE = (px, y, z) => S.ell(px, y, z, 0, 1.15, BZ, .29, .47, .2);
-function capeF(x, y, z) {
+function capeS(x, y, z) {
   const px = Math.abs(x), th = Math.atan2(x, z - BZ);
-  const bot = Math.max(1.27 - .03 * Math.abs(Math.sin(th)) + .025 * Math.abs(Math.sin(th * 6 + 1)) + .012 * Math.sin(th * 15), z > BZ ? 1.455 - px * .62 : 0);
-  let d = Math.max(Math.abs(CAPE(px, y, z)) - .009, bot - y, y - 1.56);
-  const cy = 1.55 - (z - BZ) * .3;                                                                // collar roll, higher at the back
-  d = S.smin(d, Math.hypot(Math.hypot(x * .95, (z - BZ) * 1.05) - .118, (y - cy) * 1.1) - .036, .04);
-  let h = S.smin(S.ell(x, y, z, 0, 1.5, -.21, .135, .12, .075), S.cone(x, y, z, 0, 1.44, -.24, 0, 1.25, -.262, .09, .012), .06);
-  return S.smin(d, h, .04) + .004 * Math.sin(th * 11 + y * 30);
+  const bot = Math.max(1.225 - .02 * Math.abs(Math.sin(th)) + .02 * Math.abs(Math.sin(th * 6 + 1)), z > BZ ? 1.47 - px * .85 : 0);
+  let d = Math.max(Math.abs(CAPE(px, y, z)) - .009, bot - y, y - 1.58);
+  if (z > BZ + .02) d = Math.max(d, (y - 1.475 - px * .8) * .6);
+  const cy = 1.6 - Math.max(0, z - BZ + .1) * .5;
+  d = S.smin(d, Math.hypot(Math.hypot(x * .95, (z - BZ) * 1.05) - .118, (y - cy) * 1.1) - .036, .04);          // collar roll
+  const h = S.smin(S.ell(x, y, z, 0, 1.5, -.21, .135, .12, .075), S.cone(x, y, z, 0, 1.44, -.24, 0, 1.25, -.262, .09, .012), .06);   // hood bag
+  return S.smin(d, h, .04);
 }
-const hemY = th => .745 + .03 * Math.abs(Math.sin(th * 4.5 + .5)) + .016 * Math.sin(th * 11) + .01 * Math.sin(th * 23);
-function tunicF(x, y, z) {
+const capeW = makeWarp(capeS, { b: [0, 1.15, -.36, .4, 1.68, .2], front: { parts: ['cape'], mode: 'outer' }, side: { parts: ['cape'], mode: 'back', pivot: BZ }, smooth: 3 });
+/* ---------- torso ---------- */
+const hemY = th => .69 - .03 * Math.max(0, Math.cos(th)) + .04 * Math.pow(Math.abs(Math.sin(th * 3.5 + .5)), 1.5);
+function tunicS(x, y, z) {
   const px = Math.abs(x), zz = z - BZ;
   let d = S.smin(S.ell(px, y, zz, 0, 1.3, .01, .172, .19, .14), S.ell(px, y, zz, 0, 1.1, .015, .152, .16, .145), .06);
-  d = S.smin(d, S.ell(px, y, zz, .14, 1.4, 0, .07, .05, .07), .05);
+  d = S.smin(d, S.ell(px, y, zz, .14, 1.38, 0, .07, .05, .07), .05);
   const r = Math.hypot(x, (zz - .01) * 1.08), ds = (r - (.156 + (1.05 - y) * .15)) * .8, th = Math.atan2(x, zz);
-  d = S.smin(d, Math.max(Math.abs(ds + .01) - .01, y - 1.05, hemY(th) - y), .02);
+  return S.smin(d, Math.max(Math.abs(ds + .01) - .01, y - 1.05, hemY(th) - y), .02);
+}
+const tunicW = makeWarp(tunicS, { b: [0, .66, -.26, .3, 1.5, .16], front: { parts: ['tunic', 'belt', 'pendant'], mode: 'sym', ymax: 1.28 }, side: { parts: ['tunic', 'belt'], mode: 'front', pivot: BZ, ymax: 1.34 }, smooth: 3 });
+function beltS(x, y, z) {
+  const r = Math.hypot(x, (z - BZ - .015) * 1.06); let d = Math.max(Math.abs(r - .166) - .011, Math.abs(y - 1.055) - .034);
+  d = Math.min(d, Math.max(Math.abs(r - .18) - .009, Math.abs(y - .975 - x * .12) - .02));
+  return Math.min(d, S.box(x, y, z, .105, .94, BZ + .16, .016, .045, .008, .004));
+}
+const pendS = (x, y, z) => Math.max((Math.abs(x) * 1.6 + Math.abs(y - 1.315) - .04) * .6, Math.abs(z - .1) - .009);
+function daggerS(x, y, z) {                  // hangs from the belt, blade angled out and back
+  const px = Math.abs(x); let d = S.cone(px, y, z, .16, 1.1, -.0, .172, .995, -.018, .017, .0165);
+  d = Math.min(d, S.sph(px, y, z, .158, 1.108, .001, .023), S.cone(px, y, z, .128, .985, -.016, .218, .962, -.03, .012, .012));
+  const t = S.clamp((.972 - y) / .327, 0, 1), cx = .176 + t * .108, cz = -.024 - t * .12, w = .034 * (1 - Math.pow(t, 1.6) * .97);
+  return Math.min(d, Math.max(Math.abs(px - cx) * .9 + Math.abs(z - cz) * 2.6 - w, y - .975, .645 - y) * .5);
+}
+const buckleS = (x, y, z) => Math.max(S.box(x, y, z, 0, 1.055, BZ + .176, .034, .04, .008, .006), -S.box(x, y, z, 0, 1.055, BZ + .176, .017, .023, .03, .003));
+/* ---------- arms ---------- */
+const SH = [.2, 1.37, -.1], EL = [.3, 1.15, -.12], WR = [.325, .95, -.105];
+const sleeveS = (x, y, z) => { const px = Math.abs(x); return S.smin(S.cone(px, y, z, SH[0], SH[1], SH[2], EL[0], EL[1], EL[2], .066, .062), S.sph(px, y, z, .298, 1.155, -.12, .066), .03) + .0045 * Math.sin(y * 52 - px * 30) * S.ss(1.3, 1.2, y); };
+const sleeveW = makeWarp(sleeveS, { b: [.08, 1.06, -.22, .42, 1.46, 0], front: { parts: ['sleeves'], mode: 'pair', ymax: 1.27 }, side: { mode: 'round' } });
+const bracerS = (x, y, z) => { const t = S.clamp((1.15 - y) / .2, 0, 1); return S.cone(Math.abs(x), y, z, .3, 1.15, -.12, WR[0], WR[1], WR[2], .058, .046) - .006 * (S.ss(.14, .06, t) + S.ss(.86, .94, t)); };
+const bracerW = makeWarp(bracerS, { b: [.2, .92, -.2, .42, 1.18, -.02], front: { parts: ['bracers'], mode: 'pair' }, side: { mode: 'round' } });
+function handS(x, y, z) {                    // relaxed hand: curled fingers read as one mass with knuckle and finger breaks
+  const px = Math.abs(x); let d = S.ell(px, y, z, .322, .845, -.08, .056, .105, .04);
+  d = S.smin(d, S.cone(px, y, z, .32, .96, -.1, .32, .9, -.09, .04, .04), .02);
+  d = S.smin(d, S.cone(px, y, z, .286, .875, -.05, .297, .795, -.042, .02, .015), .008);       // thumb
+  for (let i = 0; i < 3; i++) d = S.smax(d, -(S.cone(px, y, z, .31 + i * .019, .855, -.04, .303 + i * .013, .74, -.052, .0055, .0045)), .004);   // finger breaks
   return d;
 }
-const SH = [.2, 1.4, -.07], EL = [.3, 1.15, -.1], WR = [.338, .935, -.055];
+const handF = trim(handS, { front: 'hands', k: .006 });
+/* ---------- legs ---------- */
+function trouserS(x, y, z) {
+  const px = Math.abs(x); let d = S.ell(px, y, z, 0, .83, BZ, .185, .13, .15);
+  d = S.smin(d, S.cone(px, y, z, .1, .78, -.05, .145, .53, -.05, .108, .094), .05); d = S.smin(d, S.ell(px, y, z, .15, .425, -.085, .088, .11, .105), .05);
+  d = S.smin(d, S.cone(px, y, z, .137, .335, -.125, .136, .29, -.13, .056, .05), .03) + .006 * Math.sin(y * 48 + px * 26 + z * 14) * S.ss(.66, .44, y) * S.ss(.3, .36, y);
+  return Math.min(d, Math.hypot(Math.hypot(px - .136, z + .128) - .054, y - .312) - .012);     // cuff band
+}
+const trouserW = makeWarp(trouserS, { b: [0, .27, -.28, .34, .98, .14], front: { parts: ['trousers'], mode: 'pair', ymax: .7 }, side: { parts: ['trousers'], mode: 'front', pivot: BZ, ymax: .7 }, smooth: 3 });
+/* lower leg and foot are one sloping wedge, as drawn: cuff high at the back, toes forward, no heel on the ground */
+const TOES = [[.158, .068], [.208, .09], [.258, .086], [.303, .06]];
+function legS(x, y, z) {
+  const px = Math.abs(x); let d = S.cone(px, y, (z + .08) * .6 - .08, .132, .31, -.135, .192, .055, -.03, .048, .056);
+  d = S.smin(d, S.ell(px, y, z, .178, .035, -.055, .052, .04, .075), .03);
+  for (const [tx, tz] of TOES) d = S.smin(d, S.cone(px, y, z, .2, .045, -.02, tx, .018, tz, .027, .017), .009);
+  for (const [tx, tz] of TOES) d = Math.min(d, S.cone(px, y, z, tx, .018, tz, tx + (tx - .2) * .22, .004, tz + .03, .011, .002));     // claws
+  return Math.max(d, -y - .008);
+}
+const legT = trim(legS, { front: 'lowerleg', side: 'lowerleg', k: .022 });
+const legF = (x, y, z) => Math.min(legT(x, y, z), S.cone(Math.abs(x), y, z, .132, .36, -.14, .14, .26, -.12, .04, .043));
+const clawMk = (x, y, z) => { const px = Math.abs(x); let m = 9; for (const [tx, tz] of TOES) m = Math.min(m, S.cone(px, y, z, tx, .018, tz, tx + (tx - .2) * .22, .004, tz + .03, .011, .002)); return .003 - m; };
+const daggerF = daggerS;
+const A = (W_, g) => W_.apply(g);
+/* c: up to three flat colours; mk: marking fields that switch to colour 2 / 3 where positive */
 const PARTS = [
-  { name: 'tail', inset: 0.035, views: [0, 1, 0], b: [-.2, .68, -.82, .2, 1.76, -.1], h: .008, f: tailF, frost: 1, col: (x, y, z) => tuft(x, y, z) < -.72 ? COL.furD : COL.fur },
-  { name: 'cloak', views: [1, 1, 1], b: [-.42, .36, -.4, .42, 1.52, .16], h: .0065, f: cloakF, col: () => COL.cloak },
-  { name: 'trousers', inset: 0.04, views: [1, 1, 1], b: [-.34, .26, -.26, .34, 1.0, .14], h: .0075, col: () => COL.trou, f(x, y, z) {
-      const px = Math.abs(x); let d = S.ell(px, y, z, 0, .83, BZ, .185, .13, .15);
-      d = S.smin(d, S.cone(px, y, z, .1, .78, -.05, .13, .53, -.04, .108, .094), .05); d = S.smin(d, S.ell(px, y, z, .134, .425, -.07, .09, .11, .1), .05);
-      return S.smin(d, S.cone(px, y, z, .132, .335, -.1, .132, .3, -.1, .06, .056), .03) + .004 * Math.sin(y * 60 + px * 30) * S.ss(.62, .42, y);
-    } },
-  { name: 'legs', inset: 0.035, views: [1, 1, 1], b: [-.36, -.01, -.24, .36, .34, .16], h: .0055, f(x, y, z) {
-      const px = Math.abs(x); let d = S.cone(px, y, z, .132, .31, -.11, .152, .13, -.135, .042, .034);
-      d = S.smin(d, S.cone(px, y, z, .156, .115, -.14, .195, .03, .04, .04, .046), .03);
-      for (const [tx, tz] of [[.115, .095], [.165, .115], [.215, .112], [.268, .09]]) d = S.smin(d, S.cone(px, y, z, .195, .03, .03, tx, .014, tz, .02, .011), .014);
-      return Math.max(d, -y);
-    }, col: () => COL.fur },
-  { name: 'tunic', inset: 0.03, views: [1, 0, 0], b: [-.3, .7, -.26, .3, 1.5, .16], h: .0065, f: tunicF, col: (x, y, z) => z > BZ && Math.abs(x) < .07 ? COL.cream : COL.green },
-  { name: 'belts', views: [1, 0, 0], b: [-.28, .9, -.26, .28, 1.12, .16], h: .005, col: () => COL.belt, f(x, y, z) {
-      const r = Math.hypot(x, (z - BZ - .015) * 1.06); let d = Math.max(Math.abs(r - .166) - .011, Math.abs(y - 1.05) - .026);
-      return Math.min(d, Math.max(Math.abs(r - .185) - .009, Math.abs(y - .99 + Math.abs(x) * .1) - .018));
-    } },
-  { name: 'daggers', views: [1, 0, 0], b: [-.32, .64, -.02, .32, 1.14, .16], h: .004, f(x, y, z) {
-      const px = Math.abs(x); let d = S.cone(px, y, z, .128, 1.095, .08, .15, .975, .095, .017, .016);
-      d = Math.min(d, S.sph(px, y, z, .126, 1.105, .079, .021), S.cone(px, y, z, .118, .975, .095, .188, .945, .095, .011, .011));
-      const t = S.clamp((.96 - y) / .285, 0, 1), cx = .156 + t * .092, cz = .096 - t * .02;
-      return Math.min(d, Math.max(Math.abs(px - cx - (y - .96) * 0) * 1.2 + Math.abs(z - cz) * 2.6 - .03 * (1 - t * .96), y - .962, .672 - y) * .5);
-    }, col: (x, y, z) => y > .985 ? COL.leatherD : COL.steel },
-  { name: 'hands', inset: 0.035, views: [1, 0, 1], b: [-.42, .7, -.14, .42, .96, .04], h: .0045, f(x, y, z) {
-      const px = Math.abs(x); let d = S.ell(px, y, z, .345, .87, -.045, .036, .058, .042);
-      for (const [oz, len] of [[-.032, .06], [-.011, .078], [.012, .076], [.034, .062]]) d = S.smin(d, S.cone(px, y, z, .348, .835, -.045 + oz, .352, .812 - len, -.045 + oz * 1.25, .0155, .0095), .012);
-      return S.smin(d, S.cone(px, y, z, .322, .875, -.02, .305, .8, .005, .016, .0095), .012);
-    }, col: () => COL.fur },
-  { name: 'sleeves', inset: 0.055, views: [1, 0, 1], b: [-.4, 1.06, -.2, .4, 1.5, .04], h: .006, col: () => COL.cream, f(x, y, z) {
-      const px = Math.abs(x); return S.smin(S.cone(px, y, z, SH[0], SH[1], SH[2], EL[0], EL[1], EL[2], .064, .06), S.sph(px, y, z, .298, 1.165, -.098, .064), .03) + .003 * Math.sin(y * 70);
-    } },
-  { name: 'bracers', inset: 0.05, views: [1, 0, 1], b: [-.44, .9, -.18, .44, 1.18, .02], h: .005, col: () => COL.leather, f(x, y, z) {
-      const px = Math.abs(x), t = S.clamp((1.145 - y) / .2, 0, 1);
-      return S.cone(px, y, z, .302, 1.145, -.1, WR[0], .945, WR[2], .062, .048) - .004 * (S.ss(.1, .0, t) + S.ss(.9, 1, t));
-    } },
-  { name: 'cape', views: [1, 1, 1], b: [-.36, 1.2, -.34, .36, 1.66, .18], h: .006, f: capeF, col: () => COL.cloak },
-  { name: 'pendant', views: [1, 0, 0], b: [-.06, 1.26, .04, .06, 1.4, .14], h: .0035, col: () => COL.pend, f: (x, y, z) => Math.max((Math.abs(x) * 1.3 + Math.abs(y - 1.33) - .045) * .6, Math.abs(z - .098) - .008) },
-  { name: 'head', views: [1, 1, 1], b: [-.2, 1.42, -.2, .2, 2.06, .25], h: .0045, f: headF, col: headC }
+  { name: 'tail', b: [-.2, .7, -.82, .2, 1.76, -.1], h: .0075, f: (x, y, z) => Math.min(tailF(x, y, z), tailRoot(x, y, z)), c: [COL.fur] },
+  { name: 'cloak', b: [-.44, .34, -.42, .44, 1.52, .16], h: .0065, f: cloakW.f, c: [COL.cloak] },
+  { name: 'trousers', b: [-.34, .26, -.3, .34, 1.0, .16], h: .007, f: trouserW.f, c: [COL.trou] },
+  { name: 'shins', gid: 13, b: [-.3, .07, -.3, .3, .38, .04], h: .005, f: (x, y, z) => Math.max(legF(x, y, z), .092 - y), c: [COL.fur] },
+  { name: 'feet', gid: 13, b: [-.36, -.02, -.24, .36, .14, .16], h: .004, f: (x, y, z) => Math.max(legF(x, y, z), y - .118), c: [COL.fur, COL.claw], mk: (x, y, z) => [clawMk(x, y, z), -1] },
+  { name: 'tunic', b: [-.3, .64, -.28, .3, 1.5, .18], h: .0065, f: tunicW.f, c: [COL.green, COL.cream], mk: (x, y, z) => [Math.min(.068 - Math.abs(x), (z - BZ) * .6), -1] },
+  { name: 'belt', b: [-.3, .9, -.28, .3, 1.14, .18], h: .005, f: A(tunicW, beltS), c: [COL.belt] },
+  { name: 'buckle', pid: 'belt', gid: 20, b: [-.06, 1.0, .06, .06, 1.11, .2], h: .003, f: A(tunicW, buckleS), c: [COL.steel] },
+  { name: 'pendant', b: [-.06, 1.24, .02, .06, 1.38, .16], h: .0035, f: A(tunicW, pendS), c: [COL.pend] },
+  { name: 'daggers', b: [-.36, .62, -.22, .36, 1.15, .04], h: .004, f: daggerF, c: [COL.steel, COL.leather], mk: (x, y, z) => [y - .985, -1] },
+  { name: 'hands', b: [-.42, .7, -.16, .42, .97, 0], h: .0045, f: handF, c: [COL.fur] },
+  { name: 'sleeves', b: [-.42, 1.04, -.24, .42, 1.48, .02], h: .006, f: sleeveW.f, c: [COL.cream] },
+  { name: 'bracers', b: [-.44, .9, -.22, .44, 1.2, 0], h: .005, f: bracerW.f, c: [COL.leather] },
+  { name: 'cape', b: [-.4, 1.14, -.38, .4, 1.7, .2], h: .006, f: capeW.f, c: [COL.cloak] },
+  { name: 'head', b: [-.22, 1.38, -.22, .22, 1.96, .27], h: .004, f: (x, y, z) => Math.min(headF(x, y, z), neckF(x, y, z)), c: [COL.fur, COL.white, COL.ring],
+    mk(x, y, z) { const px = Math.abs(x), e = eyeLocal(px, y, z);
+      const muzzle = Math.min(1.71 - y, z - .1, .078 + (1.7 - y) * .35 - px), jaw = Math.min(1.66 - y + px * .12, z + .03 + (1.66 - y) * .6, .13 - px);
+      return [Math.max(muzzle, jaw), .05 - Math.hypot((e[0] + .004) * .9, (e[1] - .006) * 1.5)]; } },
+  { name: 'jaw', pid: 'head', gid: 1, b: [-.08, 1.59, .02, .08, 1.68, .22], h: .0035, f: jawF, c: [COL.white] },
+  { name: 'eyes', pid: 'head', gid: 17, b: [-.14, 1.72, .02, .14, 1.83, .14], h: .003, f: eyeF, c: [COL.eye, hex('#ffffff'), COL.iris],
+    mk(x, y, z) { const px = Math.abs(x), e = eyeLocal(px, y, z); return [.0065 - Math.hypot(e[0] + .008, e[1] - .009), Math.hypot(e[0], e[1] + .004) - .0225]; } },
+  { name: 'brows', pid: 'head', gid: 21, b: [-.14, 1.8, .03, .14, 1.86, .14], h: .003, c: [COL.furD],
+    f: (x, y, z) => { const px = Math.abs(x); return S.smin(S.cone(px, y, z, .046, 1.814, .132, .084, 1.832, .112, .006, .0095), S.cone(px, y, z, .084, 1.832, .112, .125, 1.824, .07, .0095, .004), .004); } },
+  { name: 'nose', pid: 'head', gid: 18, b: [-.05, 1.64, .17, .05, 1.73, .24], h: .003, f: noseF, c: [COL.nose] },
+  { name: 'ears', b: [-.2, 1.82, -.14, .2, 2.05, .02], h: .0035, f: earF, c: [COL.fur, COL.ear], mk: (x, y, z) => [.012 - earS(Math.abs(x), y, z)[1], -1] }
 ];
 const GUIDES = [0, 1.05, 1.5, 1.89];
-/* how each traced reference view maps to model space: px per unit, pixel column of the body axis, pixel row of the ground */
-const VIEWMAP = { front: { s: 645, cx: 254.5, gy: 1306 }, side: { s: 645, cx: 490, gy: 1306 }, back: { s: 645, cx: 244.5, gy: 1290 } };
+/* whiskers: [root, mid, tip] per side, mirrored */
+const WHISKERS = [[[.045, 1.692, .2], [.1, 1.698, .175], [.16, 1.69, .12]], [[.048, 1.682, .198], [.105, 1.676, .17], [.165, 1.655, .12]], [[.045, 1.672, .195], [.095, 1.655, .17], [.145, 1.625, .125]]];

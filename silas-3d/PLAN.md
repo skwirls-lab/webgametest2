@@ -107,7 +107,9 @@ Re-fit the sculpt part by part against the part maps, front then side.
 - Hands: palm, four fingers and thumb with knuckle breaks, claws. Feet: heel, pads, four toes, claws.
 - Cloth: real folds on cape, hood, cloak, sleeves, trousers; torn hems; belt buckle, dagger hilts
   and guards, bracer straps, pendant carved leaf.
-- Tail: layered fur clumps with a feathered edge, not a tube.
+- Tail: one bold, clean shape with a hard, defined outline that follows the reference S-curve. Fur is
+  suggested by a few large deliberate breaks in the silhouette and by interior ink strokes, never by
+  many small spikes or a jagged edge.
 
 **Gate 2**
 - Phase 1 numbers still hold.

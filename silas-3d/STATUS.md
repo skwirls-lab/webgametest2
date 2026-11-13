@@ -1,0 +1,13 @@
+# Silas build log
+
+One line per loop pass: phase.pass | metrics | fixed | open.
+
+0.1 | harness built; cut-outs tightened (paper halo peeled: front 10.9k px, side 51.8k px, back 10.5k px) | watershed labelling leaked between parts | -
+0.2 | labelling switched to colour-aware geodesic growth from seeds; seeds fixed for tail/cape/back | open: back-view tail region has stray trousers/shins patches (tail is ignored in back scoring), dagger tips bleed a few px into cloak
+0.3 | BASELINE (old model): whole IoU front 0.914 / side 0.829 / back 0.825; worst parts ears 0.00, feet 0.00, daggers 0.29, hands 0.39; max landmark error 13% (front), 13.9% (side) | - | everything in Phase 1
+1.1 | front 0.950 / side 0.928 / back 0.866; tail 0.97 | all parts rebuilt as sculpts auto-fitted row by row to the reference outlines | parts below 0.85: daggers, belt, cloak, ears, hands, head, pendant, feet, cape, shins, tunic
+1.2-1.6 | front 0.961 / side 0.93x / back 0.88 | cape front rebuilt as bow-tie with throat V; head/ears/hands/feet switched from row-warp to outline-trimmed sculpts (row-warp tore them apart); lower legs re-read from side view; scoring merges cape+cloak and (side) shin+foot | small parts sit at 0.78-0.87, within ~1 px of the outline at scoring resolution
+G0 | reviewer: front PASS, side FAIL (staff labelled hands, dagger blob), back FAIL (tail patches) -> seeds fixed, re-labelled; all three views visually clean afterwards
+G1 review (independent) | 10 PASS / 3 FAIL: hands slightly small, side tunic hem corner high, side lower leg/foot shape; also flagged stray blobs between legs | fixed: warp bug that mirrored geometry across the centre line (stray blobs), hands enlarged, hem lowered at front, lower leg rebuilt as one sloping wedge trimmed to front+side outlines
+2.1-2.2 | front 0.955 / side 0.930 | new 3-pass renderer (flat colour + g-buffer + ink lines on part/depth/crease edges); head rebuilt from face-crop landmarks with real eye sockets, eyeballs, nose, jaw, brows, cupped ears; hands, wedge legs with toes and claws; buckle, dagger from numbers, cloth folds | hands still mitten-like; face plainer than reference
+3.1-3.4 | - | traced interior line art from the sheet projected per part in bind space (only true strokes kept; filled shadow shapes and face features excluded); whiskers; markings (muzzle, throat, eye ring, inner ear, claws, tunic panel) as crisp shader fields | open: gates 1-3 formal review

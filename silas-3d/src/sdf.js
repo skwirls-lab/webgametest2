@@ -68,11 +68,12 @@ function surfaceNets(f, b, h) {
   return { pos: P, nrm: N, idx: new Uint32Array(idx) };
 }
 const hex = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
-/* part = {name, b, h, f, col(x,y,z)->[r,g,b], gloss} -> THREE.BufferGeometry with colour */
+/* part = {name, b, h, f, mk(x,y,z)->[a,b]} -> THREE.BufferGeometry. mk are two "marking" fields; the shader
+   switches to the part's 2nd / 3rd colour where a field is positive, which keeps marking edges crisp. */
 function sculpt(part) {
-  const m = surfaceNets(part.f, part.b, part.h), col = new Float32Array(m.pos.length);
-  for (let q = 0; q < m.pos.length; q += 3) { const c = part.col(m.pos[q], m.pos[q + 1], m.pos[q + 2]); col[q] = c[0]; col[q + 1] = c[1]; col[q + 2] = c[2]; }
+  const m = surfaceNets(part.f, part.b, part.h), mk = new Float32Array(m.pos.length / 3 * 2);
+  for (let q = 0, k = 0; q < m.pos.length; q += 3, k += 2) { const c = part.mk ? part.mk(m.pos[q], m.pos[q + 1], m.pos[q + 2]) : null; mk[k] = c ? c[0] : -1; mk[k + 1] = c ? c[1] : -1; }
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(m.pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(m.nrm, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.setAttribute('position', new THREE.BufferAttribute(m.pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(m.nrm, 3)); g.setAttribute('mk', new THREE.BufferAttribute(mk, 2));
   g.setIndex(new THREE.BufferAttribute(m.idx, 1)); return g;
 }
